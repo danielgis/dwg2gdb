@@ -12,20 +12,30 @@ import geopandas as gpd
 from geopandas import points_from_xy
 from geopandas.geodataframe import GeoDataFrame
 from datetime import datetime
+import uuid
 
 _BASE_DIR = os.path.dirname(__file__)
+
+_NAME_GDB = 'carta_topografica.gdb'
+_GDB_PATH = os.path.join(_BASE_DIR, _NAME_GDB)
+
+_MAC_ADREESS = uuid.getnode()
+
+if _MAC_ADREESS == 44225924275944:
+    _BASE_DIR = os.path.join(os.path.dirname(_BASE_DIR), 'aed')
+
 _DWG_DIR = os.path.join(_BASE_DIR, 'dwg') # Directorio que debe contener a todos los archivos *.dwg
 
 _SHAPE_DIR = os.path.join(_BASE_DIR, 'shp') # No es necesario que exista ya que se genera en el proceso
 if not os.path.exists(_SHAPE_DIR):
     os.mkdir(_SHAPE_DIR)
 
-_NAME_GDB = 'carta_topografica.gdb'
-_GDB_PATH = os.path.join(_BASE_DIR, _NAME_GDB)
+
 _DWG_FILES = glob.glob(f"{_DWG_DIR}/**/*.dwg", recursive=True)
 
 _SHAPE_ZONAS = os.path.join(_BASE_DIR, r'base\zonas_geograficas_4326_ingemmet.shp') # Es necesario especificar
 
+_TABLE_TARGET_PL_REFNAME = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pl_refname')
 _TABLE_TARGET_PL = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pl')
 _TABLE_TARGET_PT_REFNAME = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pt_refname')
 _TABLE_TARGET_PT = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pt')
@@ -315,7 +325,7 @@ def codificacion(gdf, **kwargs):
     return gdf
 
 
-def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria, code):
+def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria, code, array_delete_refname=None):
     """
     Transforma un archivo *.dwg a *.shp
     :param archivo_dwg: ubicacion de archivo en formato *.dwg
@@ -331,6 +341,8 @@ def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria
     outpath = f'{directorio_salida}/{layer_name}_{tipo_geometria}.shp'
     arcpy.CopyFeatures_management(make_feature, outpath)
     gdf = gpd.read_file(outpath)
+    if array_delete_refname:
+        gdf = gdf[~gdf[_REFNAME_FIELD].isin(array_delete_refname)]
     gdf = codificacion(gdf, **code)
     return gdf
 
@@ -399,6 +411,11 @@ def proceso():
     arcpy.env.overwriteOutput = True
     cuadrantes = list()
     gdf_zona = gpd.read_file(_SHAPE_ZONAS)
+
+    np_target_pl_refname = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PL_REFNAME, [_REFNAME_FIELD])
+    df_target_pl_refname = pd.DataFrame(np_target)
+    refname_pl_delete = df_target_pl_refname[_REFNAME_FIELD].tolist()
+
     np_target = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PL, [_COLOR_FIELD, _LINETYPE_FIELD, _TARGET_FIELD])
     df_target = pd.DataFrame(np_target)
 
@@ -435,7 +452,7 @@ def proceso():
             gdf_ann = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _ANNOTATION, code)
             row['zona'], row['geometry'], cuadrante_proj = determinar_zona_geografica(gdf_ann, gdf_zona)
 
-            gdf_pli = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POLYLINE, code)
+            gdf_pli = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POLYLINE, code, array_delete_refname=refname_pl_delete)
             gdf_pnt = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POINT, code)
 
             polilineas_a_geodatabase(gdf_pli, row['zona'], df_target, code['code'], cuadrante_proj)
@@ -454,7 +471,7 @@ def proceso():
     gdf_cuadrantes.to_crs(epsg=4326, inplace=True)
     cuadrantes_shapefile = os.path.join(_SHAPE_DIR, 'cuadrantes.shp')
     gdf_cuadrantes.to_file(cuadrantes_shapefile)
-    arcpy.Append_management(cuadrantes_shapefile, os.path.join(_BASE_DIR, _NAME_GDB, 'PO_00_cuadriculas'), 'NO_TEST')
+    arcpy.Append_management(cuadrantes_shapefile, os.path.join(_GDB_PATH, 'PO_00_cuadriculas'), 'NO_TEST')
     # arcpy.CopyFeatures_management(cuadrantes_shapefile, os.path.join(_BASE_DIR, _NAME_GDB, 'PO_00_cuadriculas'))
     print('end process')
 
