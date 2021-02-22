@@ -13,5 +13,5 @@ for ds in datasets:
         arcpy.DeleteRows_management(path)
         arcpy.AddMessage(f'Deleting {fc}')
 
-arcpy.AddMesage('fCompactando {geodatabase}')
+arcpy.AddMessage(f'Compactando {geodatabase}')
 arcpy.Compact_management(geodatabase)

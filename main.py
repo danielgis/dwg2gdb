@@ -410,12 +410,13 @@ def proceso():
     Proceso principal
     :return: no aplica
     """
+    global _DWG_FILES
     arcpy.env.overwriteOutput = True
     cuadrantes = list()
     gdf_zona = gpd.read_file(_SHAPE_ZONAS)
 
     np_target_pl_refname = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PL_REFNAME, [_REFNAME_FIELD])
-    df_target_pl_refname = pd.DataFrame(np_target)
+    df_target_pl_refname = pd.DataFrame(np_target_pl_refname)
     refname_pl_delete = df_target_pl_refname[_REFNAME_FIELD].tolist()
 
     np_target = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PL, [_COLOR_FIELD, _LINETYPE_FIELD, _TARGET_FIELD])
