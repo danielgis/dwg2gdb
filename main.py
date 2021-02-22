@@ -20,8 +20,9 @@ _NAME_GDB = 'carta_topografica.gdb'
 _GDB_PATH = os.path.join(_BASE_DIR, _NAME_GDB)
 
 _MAC_ADREESS = uuid.getnode()
+_MAC_ADREESS_HOME = 44225924275944
 
-if _MAC_ADREESS == 44225924275944:
+if _MAC_ADREESS == _MAC_ADREESS_HOME:
     _BASE_DIR = os.path.join(os.path.dirname(_BASE_DIR), 'aed')
 
 _DWG_DIR = os.path.join(_BASE_DIR, 'dwg') # Directorio que debe contener a todos los archivos *.dwg
@@ -341,6 +342,7 @@ def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria
     outpath = f'{directorio_salida}/{layer_name}_{tipo_geometria}.shp'
     arcpy.CopyFeatures_management(make_feature, outpath)
     gdf = gpd.read_file(outpath)
+    gdf[_REFNAME_FIELD] = gdf[_REFNAME_FIELD].str.lower()
     if array_delete_refname:
         gdf = gdf[~gdf[_REFNAME_FIELD].isin(array_delete_refname)]
     gdf = codificacion(gdf, **code)
@@ -441,6 +443,9 @@ def proceso():
     # r'37v-iv-ne.dwg',
     # r'37v-i-no.dwg'
     # ]
+
+    if _MAC_ADREESS != _MAC_ADREESS_HOME:
+        _DWG_FILES = _DWG_FILES[:10]
 
     for i, dwg in enumerate(_DWG_FILES):
         try:
