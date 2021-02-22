@@ -41,6 +41,10 @@ _TABLE_TARGET_PL = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pl')
 _TABLE_TARGET_PT_REFNAME = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pt_refname')
 _TABLE_TARGET_PT = os.path.join(_GDB_PATH, 'TB_00_clasificacion_pt')
 
+_TABLE_TARGET_PO_REFNAME = os.path.join(_GDB_PATH, 'TB_00_clasificacion_po_refname')
+_TABLE_TARGET_PO_LAYER = os.path.join(_GDB_PATH, 'TB_00_clasificacion_po_layer')
+_TABLE_TARGET_PO = os.path.join(_GDB_PATH, 'TB_00_clasificacion_po') 
+
 _PSAD_EPSG = 24860
 _WGS_EPSG = 32700
 
@@ -62,6 +66,7 @@ _BLKCOLOR_FIELD = 'BlkColor'
 _LINEWT_FIELD = 'LineWt'
 _ENTLINEWT_FIELD = 'EntLineWt'
 _REFNAME_FIELD = 'RefName'
+_LAYER_FIELD = 'Layer'
 _TARGET_FIELD = 'target'
 _GEOMETRY_FIELD = 'geometry'
 
@@ -429,6 +434,17 @@ def proceso():
                       'categoria']
     np_target_b = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PT, fields_targe_b)
     df_target_b = pd.DataFrame(np_target_b)
+
+    np_target_po_refname = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PO_REFNAME, [_REFNAME_FIELD])
+    df_target_po_refname = pd.DataFrame(np_target_po_refname)
+    refname_po_delete = np_target_po_refname[_REFNAME_FIELD].tolist()
+
+    np_target_po_layer = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PO_LAYER, [_LAYER_FIELD])
+    df_target_po_layer= pd.DataFrame(np_target_po_layer)
+    refname_po_delete = df_target_po_layer[_LAYER_FIELD].tolist()
+
+    np_target_po = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PO_REFNAME, [_LAYER_FIELD, _COLOR_FIELD, _LINETYPE_FIELD, _TARGET_FIELD])
+    df_target_po = pd.DataFrame(np_target_po)
 
     codes = list()
     # print(_DWG_FILES[7:8])
