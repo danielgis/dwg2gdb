@@ -54,6 +54,7 @@ _NAME_DATASET = 'DS_0{}_cartografia_{}s'
 _NAME_FEATURE_PL = 'PL_0{}_{}'
 _NAME_FEATURE_PT = 'PT_0{}_{}'
 _NAME_FEATURE_AN = 'AN_0{}_anotaciones'
+_NAME_FEATURE_PO = 'PO_0{}_{}'
 
 _POINT = 'Point'
 _ANNOTATION = 'Annotation'
@@ -281,6 +282,47 @@ def punto_a_geodatabase(gdf, gdf_target_a, gdf_target_b, zona, name, cuadricula)
         arcpy.Append_management(shp_outpath, feature_class_path, 'NO_TEST')
 
 
+def po_preprocesamiento(gdf):
+    """
+    Proceso que permiter depurar los datos de puntos para su clasificacion
+    :param gdf: geodataframe de poligonos
+    :return: geodataframe depurado
+    """
+    gdf = gdf.dropna(subset=[_GEOMETRY_FIELD])  # Elimina geometrias nulas
+    gdf = gdf.explode()  # Multipolygon a polygon
+    gdf = gdf.drop_duplicates(subset=['geometry'], keep='first')  # Remueve duplicados espacialmente
+    return gdf
+
+def po_clasificacion(gdf, gdf_target):
+    gdf[_LINETYPE_FIELD] = gdf[_LINETYPE_FIELD].str.lower()
+    gdf[_LAYER_FIELD] = gdf[_LAYER_FIELD].str.lower()
+    df = pd.merge(gdf, gdf_target, how='left', on=[_LAYER_FIELD, _COLOR_FIELD, _LINETYPE_FIELD])
+    gdf = gpd.GeoDataFrame(df)
+    return gdf
+
+
+def poligonos_a_geodatabase(gdf, gdf_target, zona, name, cuadricula):
+    idx = _ZONAS.index(int(zona)) + 1
+    gdf = reproyectar_geodataframe(gdf, _PSAD_EPSG + int(zona), _WGS_EPSG + int(zona))
+    gdf = gdf[gdf.intersects(cuadricula.geometry[0])]
+    gdf = po_preprocesamiento(gdf)
+    gdf = po_clasificacion(gdf, gdf_target_a, gdf_target_b)
+    target = gdf[_TARGET_FIELD].unique()
+    for i in target:
+        dataset = _NAME_DATASET.format(idx, zona)
+        feature = _NAME_FEATURE_PO.format(idx, i)
+        feature_class_path = os.path.join(_GDB_PATH, dataset, feature)
+        if (not arcpy.Exists(feature_class_path)) or (i is None):
+            feature = _NAME_FEATURE_PO.format(idx, 'otros')
+            feature_class_path = os.path.join(_GDB_PATH, dataset, feature)
+        shp_outpath = os.path.join(_SHAPE_DIR, f'po_{name}_{i}.shp')
+        gdf_filter = gdf[gdf[_TARGET_FIELD] == i]
+        if not len(gdf_filter):
+            continue
+        gdf_filter.to_file(shp_outpath)
+        arcpy.Append_management(shp_outpath, feature_class_path, 'NO_TEST')
+
+
 def reproyectar_geodataframe(gdf, origen, destino):
     """
     Permite reproyectar un geodataframe
@@ -331,7 +373,7 @@ def codificacion(gdf, **kwargs):
     return gdf
 
 
-def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria, code, array_delete_refname=None):
+def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria, code, array_delete_refname=None, array_delete_layer=None):
     """
     Transforma un archivo *.dwg a *.shp
     :param archivo_dwg: ubicacion de archivo en formato *.dwg
@@ -346,9 +388,12 @@ def dwg_a_shapefile_por_geometria(archivo_dwg, directorio_salida, tipo_geometria
     make_feature = arcpy.MakeFeatureLayer_management(f'{archivo_dwg}/{tipo_geometria}', layer_name)
     outpath = f'{directorio_salida}/{layer_name}_{tipo_geometria}.shp'
     arcpy.CopyFeatures_management(make_feature, outpath)
-    gdf = gpd.read_file(outpath)
-    gdf[_REFNAME_FIELD] = gdf[_REFNAME_FIELD].str.lower()
+    gdf = gpd.read_file(outpath)    
+    if array_delete_layer:
+        gdf[_LAYER_FIELD] = gdf[_LAYER_FIELD].str.lower()
+        gdf = gdf[~gdf[_LAYER_FIELD].isin(array_delete_refname)]
     if array_delete_refname:
+        gdf[_REFNAME_FIELD] = gdf[_REFNAME_FIELD].str.lower()
         gdf = gdf[~gdf[_REFNAME_FIELD].isin(array_delete_refname)]
     gdf = codificacion(gdf, **code)
     return gdf
@@ -476,10 +521,12 @@ def proceso():
 
             gdf_pli = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POLYLINE, code, array_delete_refname=refname_pl_delete)
             gdf_pnt = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POINT, code)
+            gdf_pol = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POLYGON, code, array_delete_refname=refname_po_delete, array_delete_layer=layer_po_delete)
 
             polilineas_a_geodatabase(gdf_pli, row['zona'], df_target, code['code'], cuadrante_proj)
             punto_a_geodatabase(gdf_pnt, df_target_a, df_target_b, row['zona'], code['code'], cuadrante_proj)
             anotaciones_a_geodatabase(gdf_ann, row['zona'], code['code'], cuadrante_proj)
+            poligonos_a_geodatabase(gdf_pol, row['zona'], df_target_po, code['code'], cuadrante_proj)
 
             cuadrantes.append({**row, **code})
             codes.append(code['code'])
