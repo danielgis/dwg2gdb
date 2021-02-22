@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<db_schemas>
+  <db_schema>
+    <table name="TB_00_clasificacion_pt_refname">
+      <indices>
+        <index name="FDO_OBJECTID">
+          <field name="OBJECTID"/>
+        </index>
+      </indices>
+      <tolerance_xy>0x2DF2C028       5</tolerance_xy>
+      <domain_minx>0x     190       1</domain_minx>
+      <domain_maxx>0x2E0054B0       0</domain_maxx>
+      <domain_miny>0x2E005530       0</domain_miny>
+      <domain_maxy>0x       0       1</domain_maxy>
+      <sp_ind_grid_count>0</sp_ind_grid_count>
+    </table>
+  </db_schema>
+</db_schemas>
