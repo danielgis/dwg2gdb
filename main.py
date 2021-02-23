@@ -290,6 +290,7 @@ def po_preprocesamiento(gdf):
     """
     gdf = gdf.dropna(subset=[_GEOMETRY_FIELD])  # Elimina geometrias nulas
     gdf = gdf.explode()  # Multipolygon a polygon
+    gdf = gdf[gdf['geometry'].is_valid]
     gdf = gdf.drop_duplicates(subset=['geometry'], keep='first')  # Remueve duplicados espacialmente
     return gdf
 
@@ -303,10 +304,13 @@ def po_clasificacion(gdf, gdf_target):
 
 def poligonos_a_geodatabase(gdf, gdf_target, zona, name, cuadricula):
     idx = _ZONAS.index(int(zona)) + 1
-    gdf = reproyectar_geodataframe(gdf, _PSAD_EPSG + int(zona), _WGS_EPSG + int(zona))
-    gdf = gdf[gdf.intersects(cuadricula.geometry[0])]
+    # if not len(gdf):
+    #     return
     gdf = po_preprocesamiento(gdf)
-    gdf = po_clasificacion(gdf, gdf_target_a, gdf_target_b)
+    gdf = reproyectar_geodataframe(gdf, _PSAD_EPSG + int(zona), _WGS_EPSG + int(zona))
+    
+    gdf = gdf[gdf.intersects(cuadricula.geometry[0])]
+    gdf = po_clasificacion(gdf, gdf_target)
     target = gdf[_TARGET_FIELD].unique()
     for i in target:
         dataset = _NAME_DATASET.format(idx, zona)
@@ -418,7 +422,7 @@ def determinar_zona_geografica(gdf, gdf_zonas):
     _M_FIELD = 'M'
     _S_FIELD = 'S'
     _IDX_FIELD = 'idx'
-    _REGEX_PATTERN = '''(\d+)(\s*)(%%186|%%167|°|15\/64|§)(\s*)(\d*)(\s*)(')(\s*)(\d*)("|'')$'''
+    _REGEX_PATTERN = '''(\d+)(\s*)(%%186|%%186%%186|%%167|°|15\/64|§)(\s*)(\d*)(\s*)(')(\s*)(\d*)("|'')$'''
     _N_CLUSTER = 4
     gdf = gdf.dropna(subset=[_TEXT_FIELD])
     gdf_regex = gdf[gdf[_TEXT_FIELD].str.match(_REGEX_PATTERN)]
@@ -486,28 +490,35 @@ def proceso():
 
     np_target_po_layer = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PO_LAYER, [_LAYER_FIELD])
     df_target_po_layer= pd.DataFrame(np_target_po_layer)
-    refname_po_delete = df_target_po_layer[_LAYER_FIELD].tolist()
+    layer_po_delete = df_target_po_layer[_LAYER_FIELD].tolist()
 
-    np_target_po = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PO_REFNAME, [_LAYER_FIELD, _COLOR_FIELD, _LINETYPE_FIELD, _TARGET_FIELD])
+    np_target_po = arcpy.da.TableToNumPyArray(_TABLE_TARGET_PO, [_LAYER_FIELD, _COLOR_FIELD, _LINETYPE_FIELD, _TARGET_FIELD])
     df_target_po = pd.DataFrame(np_target_po)
 
     codes = list()
     # print(_DWG_FILES[7:8])
     # exit()
     # _DWG_FILES = [
-    # r'24m-iii-se.dwg',
-    # r'34v-iii-ne.dwg', sin coords
-    # r'34v-iii-se.dwg' sin coords,
-    # r'22k-iii-so.dwg' procesado pero es un archivo incompleto,
-    # r'22k-ii-se.dwg',
-    # r'36v-iv-so.dwg',
-    # r'36v-iv-no.dwg',
-    # r'37v-iv-ne.dwg',
-    # r'37v-i-no.dwg'
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\17\17-e\17e-i-ne.dwg',
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\22\22k-ii-se.dwg',
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\22\22k-iii-so.dwg',
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\24\24-m\24m-iii-se.dwg',
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\35\35-v\35v-ii-no.dwg',
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\35\35-v\35v-ii-se.dwg',
+        # r'd:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\dwg\36\36-v\36v-ii-ne.dwg',
+        # r'24m-iii-se.dwg',
+        # r'34v-iii-ne.dwg', sin coords
+        # r'34v-iii-se.dwg' sin coords,
+        # r'22k-iii-so.dwg' procesado pero es un archivo incompleto,
+        # r'22k-ii-se.dwg',
+        # r'36v-iv-so.dwg',
+        # r'36v-iv-no.dwg',
+        # r'37v-iv-ne.dwg',
+        # r'37v-i-no.dwg'
     # ]
 
-    if _MAC_ADREESS != _MAC_ADREESS_HOME:
-        _DWG_FILES = _DWG_FILES[:10]
+    # if _MAC_ADREESS != _MAC_ADREESS_HOME:
+    #     _DWG_FILES = _DWG_FILES[:10]
 
     for i, dwg in enumerate(_DWG_FILES):
         try:
@@ -526,11 +537,11 @@ def proceso():
             polilineas_a_geodatabase(gdf_pli, row['zona'], df_target, code['code'], cuadrante_proj)
             punto_a_geodatabase(gdf_pnt, df_target_a, df_target_b, row['zona'], code['code'], cuadrante_proj)
             anotaciones_a_geodatabase(gdf_ann, row['zona'], code['code'], cuadrante_proj)
-            poligonos_a_geodatabase(gdf_pol, row['zona'], df_target_po, code['code'], cuadrante_proj)
+            poligonos_a_geodatabase(gdf_pol, df_target_po, row['zona'], code['code'], cuadrante_proj)
 
             cuadrantes.append({**row, **code})
             codes.append(code['code'])
-            print(code)
+            print(i, code)
         except Exception as e:
             print(i, dwg, e)
 

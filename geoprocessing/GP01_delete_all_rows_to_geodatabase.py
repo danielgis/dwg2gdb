@@ -1,7 +1,8 @@
 import arcpy
 import os
 
-geodatabase = arcpy.GetParameterAsText(0)
+# geodatabase = arcpy.GetParameterAsText(0)
+geodatabase = r'D:\daguado\P03_apoyo_osi\P0301_mapa_topografico_25k\dev\carta_topografica.gdb'
 arcpy.env.workspace = geodatabase
 
 datasets = arcpy.ListDatasets(feature_type='feature')
