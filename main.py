@@ -132,8 +132,9 @@ def polilineas_a_geodatabase(gdf, zona, df_target, name, cuadricula):
     gdf = pl_clasificacion(gdf, df_target)
     gdf = reproyectar_geodataframe(gdf, _PSAD_EPSG + int(zona), _WGS_EPSG + int(zona))
     gdf = gdf[gdf.intersects(cuadricula.geometry[0])]
-    gdf['RuleID'] = 1
     for i in gdf[_TARGET_FIELD].unique():
+        if i in ('hidrografia', 'vias'):
+            gdf['categoria'] = 1
         dataset = _NAME_DATASET.format(idx, zona)
         feature = _NAME_FEATURE_PL.format(idx, i)
         feature_class_path = os.path.join(_GDB_PATH, dataset, feature)
@@ -268,6 +269,8 @@ def punto_a_geodatabase(gdf, gdf_target_a, gdf_target_b, zona, name, cuadricula)
     gdf = pt_clasificacion(gdf, gdf_target_a, gdf_target_b)
     target = gdf[_TARGET_FIELD].unique()
     for i in target:
+        if i in ('actividad', 'infraestructura'):
+            gdf['categoria'] = 1
         dataset = _NAME_DATASET.format(idx, zona)
         feature = _NAME_FEATURE_PT.format(idx, i)
         feature_class_path = os.path.join(_GDB_PATH, dataset, feature)
@@ -532,8 +535,8 @@ def proceso():
         # r'37v-i-no.dwg'
     # ]
 
-    if _MAC_ADREESS != _MAC_ADREESS_HOME:
-        _DWG_FILES = _DWG_FILES[:10]
+    # if _MAC_ADREESS != _MAC_ADREESS_HOME:
+    _DWG_FILES = _DWG_FILES[10:15]
 
     for i, dwg in enumerate(_DWG_FILES):
         try:

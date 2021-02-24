@@ -19,13 +19,13 @@ author = 'Daniel Aguado'
 
 # Generamos el codigo de la hoja
 # code = '{}{}{}{}'.format(fila, columna, cuadrante, rumbo)
-code = '11d4no'
+code = '10c2no'
 
 # Realizamos la sentencia sql para el filtro de hoja
 query = "{} = '{}'".format(st._CODE_FIELD, code)
 
 # Accedemos al feature de cuadriculas para obtener informacion de nombre y zona
-cursor = arcpy.da.SearchCursor(st._CUADRICULAS_PATH, [st._CODE_FIELD, st._ZONA_FIELD], query)
+cursor = arcpy.da.SearchCursor(st._CUADRICULAS_PATH, [st._NOMBRE_FIELD, st._ZONA_FIELD], query)
 cuadricula_info = map(lambda i: i, cursor)
 
 # Si el codigo ingresado no retorna registros se ejecuta un error
