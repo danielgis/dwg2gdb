@@ -425,9 +425,12 @@ def determinar_zona_geografica(gdf, gdf_zonas):
     _REGEX_PATTERN = '''(\d+)(\s*)(%%186|%%186%%186|%%167|°|15\/64|§)(\s*)(\d*)(\s*)(')(\s*)(\d*)("|'')$'''
     _N_CLUSTER = 4
     gdf = gdf.dropna(subset=[_TEXT_FIELD])
+    gdf[_X_FIELD] = gdf.centroid.x
+    gdf[_Y_FIELD] = gdf.centroid.y
+    
     gdf_regex = gdf[gdf[_TEXT_FIELD].str.match(_REGEX_PATTERN)]
-    gdf_regex[_X_FIELD] = gdf_regex.centroid.x
-    gdf_regex[_Y_FIELD] = gdf_regex.centroid.y
+    # gdf_regex[_X_FIELD] = gdf_regex.centroid.x
+    # gdf_regex[_Y_FIELD] = gdf_regex.centroid.y
     gdf_regex = gdf_regex[[_X_FIELD, _Y_FIELD, _TEXT_FIELD]].reset_index()
     # Clasificacion no supervizada (algoritmo de clustering)
     kmeans_model = KMeans(n_clusters=_N_CLUSTER)
@@ -448,6 +451,14 @@ def determinar_zona_geografica(gdf, gdf_zonas):
     gdf_cuad = GeoDataFrame(df_cuad, geometry=points_from_xy(df_cuad.Longitude, df_cuad.Latitude))
     cuadrante = gdf_cuad.unary_union.convex_hull
     gdf_cuad_pol = GeoDataFrame(geometry=[cuadrante])
+
+    # Obteniendo el nombre del cuadrante
+    x_cuad = gdf_cuad_pol.centroid.x[0]
+    gdf_title = gdf.sort_values(by=[_Y_FIELD], ascending=False).iloc[:5, :]
+    gdf_title['distance'] = abs(gdf_title.x - x_cuad)
+    gdf_title.sort_values(by=['distance'], inplace=True)
+    name_cuadrante = gdf_title.iloc[0, :][_TEXT_FIELD]
+
     gdf_cuad_pol.set_crs(epsg=4248, inplace=True)
     gdf_cuad_pol.to_crs(epsg=4326, inplace=True)
     response = gpd.overlay(gdf_zonas, gdf_cuad_pol, how='intersection')
@@ -456,7 +467,7 @@ def determinar_zona_geografica(gdf, gdf_zonas):
     response = response.sort_values(_AREA_FIELD, ascending=False).reset_index()
     zona_response = response[_ZONE_FIELD][0]
     cuadrante_proj = gdf_cuad_pol.to_crs(epsg=_WGS_EPSG + int(zona_response))
-    return zona_response, cuadrante, cuadrante_proj
+    return zona_response, cuadrante, cuadrante_proj, name_cuadrante
 
 
 def proceso():
@@ -528,7 +539,7 @@ def proceso():
             if code['code'] in codes:
                 raise RuntimeError(f'Archivo duplicado: {name}')
             gdf_ann = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _ANNOTATION, code)
-            row['zona'], row['geometry'], cuadrante_proj = determinar_zona_geografica(gdf_ann, gdf_zona)
+            row['zona'], row['geometry'], cuadrante_proj, row['nombre'] = determinar_zona_geografica(gdf_ann, gdf_zona)
 
             gdf_pli = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POLYLINE, code, array_delete_refname=refname_pl_delete)
             gdf_pnt = dwg_a_shapefile_por_geometria(dwg, _SHAPE_DIR, _POINT, code)

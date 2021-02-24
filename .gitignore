@@ -3,3 +3,8 @@ base/
 dwg/
 shp/
 .vscode/
+*.pyc
+*.shp
+*.shx
+*.prj
+*.dbf
