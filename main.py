@@ -443,6 +443,7 @@ def determinar_zona_geografica(gdf, gdf_zonas):
     df_concat[_S_FIELD] = df_concat[_S_FIELD].astype(int) / 3600
     df_concat[_DD_FIELD] = (df_concat[_D_FIELD].astype(int) + df_concat[_M_FIELD] + df_concat[_S_FIELD]) * -1
     df_concat = df_concat.drop_duplicates(subset=[_TARGET_FIELD, _D_FIELD, _M_FIELD, _S_FIELD], keep='first')
+
     df_concat.sort_values(by=[_TARGET_FIELD, _DD_FIELD], inplace=True, ignore_index=True)
     df_concat[_IDX_FIELD] = df_concat.groupby(_TARGET_FIELD).cumcount()
     latitude = df_concat[df_concat[_IDX_FIELD] == 1][_DD_FIELD].tolist()
@@ -452,21 +453,24 @@ def determinar_zona_geografica(gdf, gdf_zonas):
     cuadrante = gdf_cuad.unary_union.convex_hull
     gdf_cuad_pol = GeoDataFrame(geometry=[cuadrante])
 
-    # Obteniendo el nombre del cuadrante
-    x_cuad = gdf_cuad_pol.centroid.x[0]
-    gdf_title = gdf.sort_values(by=[_Y_FIELD], ascending=False).iloc[:5, :]
-    gdf_title['distance'] = abs(gdf_title.x - x_cuad)
-    gdf_title.sort_values(by=['distance'], inplace=True)
-    name_cuadrante = gdf_title.iloc[0, :][_TEXT_FIELD]
-
     gdf_cuad_pol.set_crs(epsg=4248, inplace=True)
     gdf_cuad_pol.to_crs(epsg=4326, inplace=True)
     response = gpd.overlay(gdf_zonas, gdf_cuad_pol, how='intersection')
     response.to_crs(epsg=32718, inplace=True)
+
     response[_AREA_FIELD] = response.area
     response = response.sort_values(_AREA_FIELD, ascending=False).reset_index()
     zona_response = response[_ZONE_FIELD][0]
     cuadrante_proj = gdf_cuad_pol.to_crs(epsg=_WGS_EPSG + int(zona_response))
+
+    # Obteniendo el nombre del cuadrante
+    x_cuad = cuadrante_proj.centroid.x[0]
+    gdf_title = gdf.sort_values(by=[_Y_FIELD], ascending=False).iloc[:5, :]
+    gdf_title['distance'] = abs(gdf_title.x - x_cuad)
+    gdf_title.sort_values(by=['distance'], inplace=True)
+    name_cuadrante = gdf_title.iloc[0, :][_TEXT_FIELD]
+    name_cuadrante = name_cuadrante.upper()
+
     return zona_response, cuadrante, cuadrante_proj, name_cuadrante
 
 
@@ -528,8 +532,8 @@ def proceso():
         # r'37v-i-no.dwg'
     # ]
 
-    # if _MAC_ADREESS != _MAC_ADREESS_HOME:
-    #     _DWG_FILES = _DWG_FILES[:10]
+    if _MAC_ADREESS != _MAC_ADREESS_HOME:
+        _DWG_FILES = _DWG_FILES[:10]
 
     for i, dwg in enumerate(_DWG_FILES):
         try:
