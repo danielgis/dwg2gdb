@@ -1,0 +1,32 @@
+﻿<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>Automapic</Name>
+  <AddInID>{7652433a-59b4-4e33-a60f-8c9dc6bf0358}</AddInID>
+  <Description>Herramienta de automatizacion de procesos geológicos</Description>
+  <Version>1.0</Version>
+  <Image>Images\Automapic.png</Image>
+  <Author>Daniel Aguado</Author>
+  <Company>Ingemmet</Company>
+  <Date>21/02/24</Date>
+  <Targets>
+    <Target name="Desktop" version="10.4" />
+  </Targets>
+  <AddIn language="CLR" library="Automapic.dll" namespace="Automapic">
+    <ArcMap>
+      <Commands>
+        <Button id="Ingemmet_Automapic_OpenDockableWindow" class="OpenDockableWindow" message="Click para acceder a la herramienta" caption="Ingresar" tip="Inicias sesión" category="ToolbarButtons" image="Images\OpenDockableWindow.png" />
+      </Commands>
+      <Toolbars>
+        <Toolbar caption="Automapic" id="Ingemmet_Automapic_toolbar">
+          <Items>
+            <Button refID="Ingemmet_Automapic_OpenDockableWindow" />
+          </Items>
+        </Toolbar>
+      </Toolbars>
+      <DockableWindows>
+        <DockableWindow id="Ingemmet_Automapic_AutomapicDock" class="AutomapicDock+AddinImpl" caption="Automapic" image="Images\AutomapicDock.png">
+          <InitialPlacement height="700" width="400" state="pinned" position="right" />
+        </DockableWindow>
+      </DockableWindows>
+    </ArcMap>
+  </AddIn>
+</ESRI.Configuration>

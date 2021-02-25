@@ -1,0 +1,83 @@
+﻿<?xml version="1.0"?>
+<doc>
+<assembly>
+<name>
+Automapic
+</name>
+</assembly>
+<members>
+<member name="T:Automapic.My.ThisAddIn">
+<summary>
+A class for looking up declarative information in the associated configuration xml file (.esriaddinx).
+</summary>
+</member>
+<member name="T:Automapic.My.ThisAddIn.IDs">
+<summary>
+A class for looking up Add-in id strings declared in the associated configuration xml file (.esriaddinx).
+</summary>
+</member>
+<member name="P:Automapic.My.ThisAddIn.IDs.OpenDockableWindow">
+<summary>
+Returns 'Ingemmet_Automapic_OpenDockableWindow', the id declared for Add-in Button class 'OpenDockableWindow'
+</summary>
+</member>
+<member name="P:Automapic.My.ThisAddIn.IDs.AutomapicDock">
+<summary>
+Returns 'Ingemmet_Automapic_AutomapicDock', the id declared for Add-in DockableWindow class 'AutomapicDock+AddinImpl'
+</summary>
+</member>
+<member name="M:Automapic.My.Internal.AddInStartupObject.GetThis">
+ <summary>
+ Expose this instance of Add-in class externally
+ </summary>
+</member>
+<member name="T:Automapic.My.Resources.Resources">
+<summary>
+  A strongly-typed resource class, for looking up localized strings, etc.
+</summary>
+</member>
+<member name="P:Automapic.My.Resources.Resources.ResourceManager">
+<summary>
+  Returns the cached ResourceManager instance used by this class.
+</summary>
+</member>
+<member name="P:Automapic.My.Resources.Resources.Culture">
+<summary>
+  Overrides the current thread's CurrentUICulture property for all
+  resource lookups using this strongly typed resource class.
+</summary>
+</member>
+<member name="P:Automapic.My.Resources.Resources.add">
+<summary>
+  Looks up a localized resource of type System.Drawing.Bitmap.
+</summary>
+</member>
+<member name="P:Automapic.My.Resources.Resources.search">
+<summary>
+  Looks up a localized resource of type System.Drawing.Bitmap.
+</summary>
+</member>
+<member name="P:Automapic.My.Resources.Resources.user">
+<summary>
+  Looks up a localized resource of type System.Drawing.Bitmap.
+</summary>
+</member>
+<member name="T:Automapic.AutomapicDock">
+ <summary>
+ Designer class of the dockable window add-in. It contains user interfaces that
+ make up the dockable window.
+ </summary>}
+</member>
+<member name="P:Automapic.AutomapicDock.Hook">
+ <summary>
+ Host object of the dockable window
+ </summary> 
+</member>
+<member name="T:Automapic.AutomapicDock.AddinImpl">
+ <summary>
+ Implementation class of the dockable window add-in. It is responsible for
+ creating and disposing the user interface class for the dockable window.
+ </summary>
+</member>
+</members>
+</doc>
